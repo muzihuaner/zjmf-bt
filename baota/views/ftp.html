@@ -58,37 +58,53 @@
 		})
     }
 	
-    function FtpLogin() {
+   function FtpLogin() {
+    // 1. 获取你本地页面的输入值
     var ftp_host = $('input[name = ftp_host]').val();
-    var ftp_port = $('input[name = ftp_port]').val();
+    var ftp_port = $('input[name = ftp_port]').val() || '21';
     var ftp_user = $('input[name = ftp_user]').val();
     var ftp_pwd = $('input[name = ftp_pwd]').val();
 
-    if (!ftp_host) {
-        layer.msg('请输入 FTP 主机地址', { icon: 2 });
+    // 2. 必填项校验
+    if (!ftp_host || !ftp_user) {
+        layer.msg('请输入 FTP 主机地址和用户名', { icon: 2 });
         return;
     }
 
-    // 构造连接字符串
-    var ftp_url = "ftp://" + ftp_host + (ftp_port && ftp_port != '21' ? ":" + ftp_port : "");
-    
-    // 复制到剪贴板
-    var input = $('<input>');
-    $('body').append(input);
-    input.val(ftp_url).select();
-    document.execCommand('copy');
-    input.remove();
+    layer.msg('正在通过安全连接前往在线 FTP...', {
+        icon: 16,
+        shade: 0.3,
+        time: 1000 
+    }, function() {
+        // 3. 创建动态表单
+        // 注意：根据目标源码，action 应该是 /login
+        var $form = $('<form>', {
+            action: 'https://ftp.cbweb.org/login',
+            method: 'POST',
+            target: '_blank'
+        });
 
-    layer.msg('FTP 地址已复制！\n请打开“我的电脑/访达”或者FTP客户端，在地址栏粘贴并回车。\n用户名：' + ftp_user, {
-        icon: 1,
-        time: 6000,
-        shade: 0.3
+        // 4. 构造对应目标网站字段名的参数
+        var fields = {
+            'host': ftp_host,
+            'port': ftp_port,
+            'username': ftp_user,
+            'password': ftp_pwd,
+            'driver': 'ftp'  // 必须包含这个隐藏字段
+        };
+
+        // 5. 填充并提交
+        $.each(fields, function(key, value) {
+            $form.append($('<input>', {
+                type: 'hidden',
+                name: key,
+                value: value
+            }));
+        });
+
+        $form.appendTo('body').submit().remove();
     });
-    
-    // 可选：尝试同时唤起（在 Firefox 中有效）
-    // window.location.href = ftp_url; 
 }
-
     function ajax(options){
 	    //创建一个ajax对象
 	    var xhr = new XMLHttpRequest() || new ActiveXObject("Microsoft,XMLHTTP");
