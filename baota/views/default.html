@@ -1,0 +1,73 @@
+<div class="alert alert-warning alert-dismissible" role="alert">
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <strong>提示：</strong> 文件名之间请用英文逗号隔开，优先级由左至右
+</div>
+<form>
+   <div class="form-row">
+        <label>默认文档</label>
+      <input type="text" class="form-control" name="default_index" value="{$list}">
+    </div>
+    <br>
+    <button  type="button" onclick="saveDefaultIndex()" class="btn btn-info">确认保存</button> 
+<script src="https://www.layuicdn.com/layer/layer.js"></script>
+  <script>
+    function saveDefaultIndex(){
+        var default_index = $('input[name = default_index]').val();
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"WebSetIndex","default_index":default_index},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function ajax(options){
+	    //创建一个ajax对象
+	    var xhr = new XMLHttpRequest() || new ActiveXObject("Microsoft,XMLHTTP");
+	    //数据的处理 {a:1,b:2} a=1&b=2;
+	    if(typeof(options.data)!='string'){
+            var str = "";
+            for(var key in options.data){
+                str+="&"+key+"="+options.data[key];
+            }
+            str = str.slice(1)
+        }else{
+            var str = options.data;
+        }
+	    options.dataType=options.dataType||'json';
+	    if(options.type == "get"){
+	        var url = options.url+"?"+str;
+	        xhr.open("get",url);
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send();
+	    }else if(options.type == "post"){
+	        xhr.open("post",options.url);
+	        xhr.setRequestHeader("content-type","application/x-www-form-urlencoded");
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send(str)
+	    }
+	    //监听
+	    xhr.onreadystatechange = function(){
+	        //当请求成功的时候
+	        if(xhr.readyState == 4 && xhr.status == 200){
+	            var d = xhr.responseText;
+	            d = JSON.parse(d);
+	            //将请求的数据传递给成功回调函数
+	            options.success&&options.success(d,xhr.responseXML)
+	        }else if(xhr.status != 200){
+	            //当失败的时候将服务器的状态传递给失败的回调函数
+	            options.error&&options.error(xhr.status);
+	        }
+	    }
+	}
+	
+  </script>

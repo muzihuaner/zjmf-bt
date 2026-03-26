@@ -1,0 +1,86 @@
+<div class="alert alert-warning alert-dismissible" role="alert">
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <strong>提示：</strong> 请根据您的程序需求选择运行目录，例如：Thinkphp的运行目录为public
+</div>
+<form id="pathchange">
+<div class="form-group">
+    <label>网站目录</label>
+    <input type="text" value="{$path}" class="form-control" readonly>
+  </div>
+  <div class="form-group">
+    <label>当前运行目录：<code>[{$list.runPath.runPath}]</code></label>
+    <select name="runpath" class="form-control">
+        {foreach $list.runPath.dirs as $vo}
+            <option value="{$vo}" {if $vo == $list.runPath.runPath}selected{/if}>{$vo}</option>
+        {/foreach}
+      </select>
+  </div>
+  <button  type="button" onclick="pathChange()" class="btn btn-info">确定切换</button>
+</form>
+<script src="https://www.layuicdn.com/layer/layer.js"></script>
+  <script>
+    function pathChange(){
+        var runpath = $('select[name = runpath]').val();
+        var now_runpath = '{$list.runPath.runPath}';
+        if (runpath === '{$list.runPath.runPath}') {
+            layer.msg('当前运行目录就是'+now_runpath+',无需切换！');
+            return false;
+        }
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"SetSiteRunPath","runpath":runpath},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function ajax(options){
+	    //创建一个ajax对象
+	    var xhr = new XMLHttpRequest() || new ActiveXObject("Microsoft,XMLHTTP");
+	    //数据的处理 {a:1,b:2} a=1&b=2;
+	    if(typeof(options.data)!='string'){
+            var str = "";
+            for(var key in options.data){
+                str+="&"+key+"="+options.data[key];
+            }
+            str = str.slice(1)
+        }else{
+            var str = options.data;
+        }
+	    options.dataType=options.dataType||'json';
+	    if(options.type == "get"){
+	        var url = options.url+"?"+str;
+	        xhr.open("get",url);
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send();
+	    }else if(options.type == "post"){
+	        xhr.open("post",options.url);
+	        xhr.setRequestHeader("content-type","application/x-www-form-urlencoded");
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send(str)
+	    }
+	    //监听
+	    xhr.onreadystatechange = function(){
+	        //当请求成功的时候
+	        if(xhr.readyState == 4 && xhr.status == 200){
+	            var d = xhr.responseText;
+	            d = JSON.parse(d);
+	            //将请求的数据传递给成功回调函数
+	            options.success&&options.success(d,xhr.responseXML)
+	        }else if(xhr.status != 200){
+	            //当失败的时候将服务器的状态传递给失败的回调函数
+	            options.error&&options.error(xhr.status);
+	        }
+	    }
+	}
+	
+  </script>

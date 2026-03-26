@@ -1,0 +1,38 @@
+<div class="table-responsive">
+      <table class="table table-bordered table-condensed">
+        <thead>
+          <tr>
+            <th>项目</th>
+            <th>已用</th>
+            <th>总共</th>
+          </tr>
+        </thead>
+        <tbody>
+              <tr>
+                <th>WEB空间</th>
+                <td>{$used_web_size} MB</td>
+                <td>{if $params.configoptions.site_max == -1}不限制{else}{$params.configoptions.site_max} MB{/if}</td>
+              </tr>
+              <tr>
+                <th>数据库大小</th>
+                <td>{$used_sql_size}</td>
+                <td>{if $params.configoptions.sql_max == -1}不限制{else}{$params.configoptions.sql_max} MB{/if}</td>
+              </tr>
+              <tr>
+                <th>域名绑定数</th>
+                <td>{$used_domian_nums} 个</td>
+                <td>{if $params.configoptions.domain_num == -1}不限制{else}{$params.configoptions.domain_num} 个{/if}</td>
+              </tr>
+              <tr>
+                <th>网站备份数</th>
+                <td>{$used_web_back_nums} 个</td>
+                <td>{if $params.configoptions.web_back_num == -1}不限制{else}{$params.configoptions.web_back_num} 个{/if}</td>
+              </tr>
+              <tr>
+                <th>数据库备份数</th>
+                <td>{$used_sql_back_nums} 个</td>
+                <td>{if $params.configoptions.sql_back_num == -1}不限制{else}{$params.configoptions.web_back_num} 个{/if}</td>
+              </tr>
+        </tbody>
+      </table>
+</div>

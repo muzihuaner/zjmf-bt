@@ -1,0 +1,107 @@
+<div class="alert alert-warning alert-dismissible" role="alert">
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <strong>提示：</strong> 请根据您的程序需求选择伪静态，也可自定义
+</div>
+<form id="rewriteChange">
+  <div class="form-group">
+    <label>伪静态选择</label>
+      <select name="rewrite" class="form-control">
+        {foreach $list.rewrite as $vo}
+            <option value="{$vo}">{$vo}</option>
+        {/foreach}
+      </select>
+  </div>
+  <button  type="button" onclick="rewriteChange()" class="btn btn-info">确定保存</button>
+</form>
+<br>
+<form id="rewriteSave">
+  <div class="form-group">
+    <label>当前伪静态规则</label>
+      <textarea  name="rewrite_content" class="form-control" rows="10">{$rewrite_content}</textarea>
+  </div>
+  <button  type="button" onclick="rewriteSave()" class="btn btn-info">确定保存</button>
+</form>
+<script src="https://www.layuicdn.com/layer/layer.js"></script>
+  <script>
+    function rewriteChange(){
+        var rewrite = $('select[name = rewrite]').val();
+        var rewrite_content = $('textarea[name = rewrite_content]').val();
+        var type = 'change';
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"SaveFileBody","rewrite":rewrite,"rewrite_content":rewrite_content,"type":type},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function rewriteSave(){
+        var rewrite_content = $('textarea[name = rewrite_content]').val();
+        var type = 'save';
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"SaveFileBody","rewrite_content":rewrite_content,"type":type},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function ajax(options){
+	    //创建一个ajax对象
+	    var xhr = new XMLHttpRequest() || new ActiveXObject("Microsoft,XMLHTTP");
+	    //数据的处理 {a:1,b:2} a=1&b=2;
+	    if(typeof(options.data)!='string'){
+            var str = "";
+            for(var key in options.data){
+                str+="&"+key+"="+options.data[key];
+            }
+            str = str.slice(1)
+        }else{
+            var str = options.data;
+        }
+	    options.dataType=options.dataType||'json';
+	    if(options.type == "get"){
+	        var url = options.url+"?"+str;
+	        xhr.open("get",url);
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send();
+	    }else if(options.type == "post"){
+	        xhr.open("post",options.url);
+	        xhr.setRequestHeader("content-type","application/x-www-form-urlencoded");
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send(str)
+	    }
+	    //监听
+	    xhr.onreadystatechange = function(){
+	        //当请求成功的时候
+	        if(xhr.readyState == 4 && xhr.status == 200){
+	            var d = xhr.responseText;
+	            d = JSON.parse(d);
+	            //将请求的数据传递给成功回调函数
+	            options.success&&options.success(d,xhr.responseXML)
+	        }else if(xhr.status != 200){
+	            //当失败的时候将服务器的状态传递给失败的回调函数
+	            options.error&&options.error(xhr.status);
+	        }
+	    }
+	}
+	
+  </script>

@@ -1,0 +1,162 @@
+{php}
+$table_num = count($data['tables']);
+{/php}
+<p class="form-control-static">数据库信息</p>
+<div class="table-responsive">
+      <table class="table table-bordered table-condensed">
+        <thead>
+          <tr>
+            <th>数据库名</th>
+            <th>数据库用户名</th>
+            <th>数据库密码</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+              <tr>
+                <td>{$database.name}</td>
+                <td>{$database.username}</td>
+                <td>{$database.password}</td>
+                <td>
+                    <a class="btn btn-primary btn-sm" href="{$data_url}/index.php?pma_username={$database.username}&pma_password={$database.password}" target="_blank">管理数据库</a>
+                </td>
+              </tr>
+        </tbody>
+      </table>
+      <br>
+<form id="database_edit">
+  <div class="form-group">
+    <label>修改新密码：</label>
+    <input type="text" class="form-control" name="db_password" id="db_password" placeholder="请勿设置太弱的密码">
+  </div>
+  <button  type="button" onclick="ResDatabasePass('{$database.id}')" class="btn btn-info">确定修改</button>
+</form>
+</div>
+<p class="form-control-static">数据库表 <code>{$table_num}张</code></p>
+<div class="table-responsive">
+      <table class="table table-bordered table-condensed">
+        <thead>
+          <tr>
+            <th>表名</th>
+            <th>引擎</th>
+            <th>字符集</th>
+            <th>行数</th>
+            <th>大小</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+            {foreach $data.tables as $key=>$vo } 
+              <tr>
+                <td>{$vo.table_name}</td>
+                <td>{$vo.type}</td>
+                <td>{$vo.collation}</td>
+                <td>{$vo.rows_count}</td>
+                <td>{$vo.data_size}</td>
+                <td>
+                    <button class="btn btn-dark btn-sm" type="button" onclick="ReTable('{$vo.table_name}')">修复</button>
+                    <button class="btn btn-primary btn-sm" type="button" onclick="OpTable('{$vo.table_name}')">优化</button>
+                </td>
+              </tr>
+            {/foreach}
+        </tbody>
+      </table>
+      <br>
+<script src="https://www.layuicdn.com/layer/layer.js"></script>
+<script>
+    function ResDatabasePass(db_id){
+        var db_password = $('input[name = db_password]').val();
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"ResDatabasePass","db_id":db_id,"db_password":db_password},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function ReTable(tables){
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"ReTable","tables":tables},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function OpTable(tables){
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"OpTable","tables":tables},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function ajax(options){
+	    //创建一个ajax对象
+	    var xhr = new XMLHttpRequest() || new ActiveXObject("Microsoft,XMLHTTP");
+	    //数据的处理 {a:1,b:2} a=1&b=2;
+	    if(typeof(options.data)!='string'){
+            var str = "";
+            for(var key in options.data){
+                str+="&"+key+"="+options.data[key];
+            }
+            str = str.slice(1)
+        }else{
+            var str = options.data;
+        }
+	    options.dataType=options.dataType||'json';
+	    if(options.type == "get"){
+	        var url = options.url+"?"+str;
+	        xhr.open("get",url);
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send();
+	    }else if(options.type == "post"){
+	        xhr.open("post",options.url);
+	        xhr.setRequestHeader("content-type","application/x-www-form-urlencoded");
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send(str)
+	    }
+	    //监听
+	    xhr.onreadystatechange = function(){
+	        //当请求成功的时候
+	        if(xhr.readyState == 4 && xhr.status == 200){
+	            var d = xhr.responseText;
+	            d = JSON.parse(d);
+	            //将请求的数据传递给成功回调函数
+	            options.success&&options.success(d,xhr.responseXML)
+	        }else if(xhr.status != 200){
+	            //当失败的时候将服务器的状态传递给失败的回调函数
+	            options.error&&options.error(xhr.status);
+	        }
+	    }
+	}
+	
+  </script>

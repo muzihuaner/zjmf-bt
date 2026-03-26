@@ -1,0 +1,140 @@
+{php}
+$sql_backup_num = count($list);
+{/php}
+<div class="alert alert-warning alert-dismissible" role="alert">
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <strong>提示：</strong>您的数据库可备份个数：<code>[{if $params.configoptions.sql_back_num == -1}不限制{else}{$params.configoptions.sql_back_num}个{/if}]</code> 
+</div>
+<p><button  type="button" onclick="sqlBackup()" class="btn btn-info">点击备份</button></p>
+<p class="form-control-static">数据库已备份个数：<code>[{$sql_backup_num}个]</code></p>
+<div class="table-responsive">
+      <table class="table table-bordered table-condensed">
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>大小</th>
+            <th>备份日期</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+            {foreach $list as $key=>$vo } 
+              <tr>
+                <td>{$vo.name}</td>
+                <td>{$vo.size}B</td>
+                <td>{$vo.addtime}</td>
+                <td>
+                    <a class="btn btn-primary btn-sm" href="{$panel_url}//download?filename={$vo.filename}&name={$vo.name}" target="_blank">下载</a> 
+                    <button class="btn btn-success btn-sm" type="button" onclick="sqlBackupRe('{$vo.filename}')">恢复</button>
+                    <button class="btn btn-danger btn-sm" type="button" onclick="sqlBackupDelete('{$vo.id}')">删除</button>
+                </td>
+              </tr>
+            {/foreach}
+        </tbody>
+      </table>
+    </div>
+    <script src="https://www.layuicdn.com/layer/layer.js"></script>
+  <script>
+  function sqlBackup(){
+        var sql_backs = {$sql_backup_num};
+        var allow_sql_backs = {$params.configoptions.sql_back_num};
+        if (allow_sql_backs !== -1) {
+            if (sql_backs >= allow_sql_backs) {
+                layer.msg('数据库备份数已达上限！');
+                return false;
+            }
+        }
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"SqlToBackup"},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function sqlBackupRe(name){
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"SqlReBackup","filename":name},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function sqlBackupDelete(id){
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"SqlDelBackup","sql_backup_id":id},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function ajax(options){
+	    //创建一个ajax对象
+	    var xhr = new XMLHttpRequest() || new ActiveXObject("Microsoft,XMLHTTP");
+	    //数据的处理 {a:1,b:2} a=1&b=2;
+	    if(typeof(options.data)!='string'){
+            var str = "";
+            for(var key in options.data){
+                str+="&"+key+"="+options.data[key];
+            }
+            str = str.slice(1)
+        }else{
+            var str = options.data;
+        }
+	    options.dataType=options.dataType||'json';
+	    if(options.type == "get"){
+	        var url = options.url+"?"+str;
+	        xhr.open("get",url);
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send();
+	    }else if(options.type == "post"){
+	        xhr.open("post",options.url);
+	        xhr.setRequestHeader("content-type","application/x-www-form-urlencoded");
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send(str)
+	    }
+	    //监听
+	    xhr.onreadystatechange = function(){
+	        //当请求成功的时候
+	        if(xhr.readyState == 4 && xhr.status == 200){
+	            var d = xhr.responseText;
+	            d = JSON.parse(d);
+	            //将请求的数据传递给成功回调函数
+	            options.success&&options.success(d,xhr.responseXML)
+	        }else if(xhr.status != 200){
+	            //当失败的时候将服务器的状态传递给失败的回调函数
+	            options.error&&options.error(xhr.status);
+	        }
+	    }
+	}
+	
+  </script>

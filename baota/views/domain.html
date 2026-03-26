@@ -1,0 +1,129 @@
+{php}
+$domain_num = count($list);
+{/php}
+<div class="alert alert-warning alert-dismissible" role="alert">
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <strong>提示：</strong> 在绑定域名之前，您需要将您的域名A记录解析到IP：<font color="red">{$params.dedicatedip}</font>
+</div>
+ <form id="domain_add">
+  <div class="form-group">
+    <label>最大域名绑定数：<code>[{if $params.configoptions.domain_num == -1}不限制{else}{$params.configoptions.domain_num}个{/if}]</code></label>
+    <input type="text" class="form-control" name="domain" id="domain" placeholder="xxxx.com">
+  </div>
+  <button  type="button" onclick="domainAdd()" class="btn btn-info">确定绑定</button>
+</form>
+<br>
+<p class="form-control-static">已绑定域名个数：<code>[{$domain_num}个]</code></p>
+<div class="table-responsive">
+      <table class="table table-bordered table-condensed">
+        <thead>
+          <tr>
+            <th>域名</th>
+            <th>端口</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+            {foreach $list as $key=>$vo } 
+              <tr>
+                <td>{$vo.name}</td>
+                <td>{$vo.port}</td>
+                <td>{if $domain_num == 1}<button class="btn btn-danger btn-sm" type="submit" disabled="disabled">不可删除</button>{else}<button class="btn btn-danger btn-sm" type="button" onclick="domainDelete('{$vo.name}','{$vo.port}')">删除</button>{/if}</td>
+              </tr>
+            {/foreach}
+        </tbody>
+      </table>
+    </div>
+<script src="https://www.layuicdn.com/layer/layer.js"></script>
+<script>
+    function domainAdd(){
+        var domain = $('input[name = domain]').val();
+        var bt_domains = {$domain_num};
+        var allow_domain = {$params.configoptions.domain_num};
+        if (!domain) {
+            layer.msg('域名不能为空！');
+            return false;
+        }
+        if (allow_domain !== -1) {
+            if (bt_domains >= allow_domain) {
+                layer.msg('域名绑定数已达上限！');
+                return false;
+            }
+        }
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"AddDomain","domain":domain},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    
+    function domainDelete(domain,port){
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"DeleteDomain","domain":domain,"port":port,},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function ajax(options){
+	    //创建一个ajax对象
+	    var xhr = new XMLHttpRequest() || new ActiveXObject("Microsoft,XMLHTTP");
+	    //数据的处理 {a:1,b:2} a=1&b=2;
+	    if(typeof(options.data)!='string'){
+            var str = "";
+            for(var key in options.data){
+                str+="&"+key+"="+options.data[key];
+            }
+            str = str.slice(1)
+        }else{
+            var str = options.data;
+        }
+	    options.dataType=options.dataType||'json';
+	    if(options.type == "get"){
+	        var url = options.url+"?"+str;
+	        xhr.open("get",url);
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send();
+	    }else if(options.type == "post"){
+	        xhr.open("post",options.url);
+	        xhr.setRequestHeader("content-type","application/x-www-form-urlencoded");
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send(str)
+	    }
+	    //监听
+	    xhr.onreadystatechange = function(){
+	        //当请求成功的时候
+	        if(xhr.readyState == 4 && xhr.status == 200){
+	            var d = xhr.responseText;
+	            d = JSON.parse(d);
+	            //将请求的数据传递给成功回调函数
+	            options.success&&options.success(d,xhr.responseXML)
+	        }else if(xhr.status != 200){
+	            //当失败的时候将服务器的状态传递给失败的回调函数
+	            options.error&&options.error(xhr.status);
+	        }
+	    }
+	}
+	
+  </script>

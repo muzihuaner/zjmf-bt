@@ -1,0 +1,132 @@
+<p class="form-control-static">FTP信息</p>
+<div class="table-responsive">
+      <table class="table table-bordered table-condensed">
+        <thead>
+          <tr>
+            <th>FTP地址</th>
+            <th>FTP用户名</th>
+            <th>FTP密码</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+              <tr>
+                <td>{$params.configoptions.ftp_server}</td>
+                <td>{$ftp.name}</td>
+                <td>{$ftp.password}</td>
+                <td>
+                    <form>
+                        <input type="hidden" id="ftp_host" name="ftp_host" value="{$params.configoptions.ftp_server}"/>
+                        <input type="hidden" id="ftp_port" name="ftp_port" value="21" />
+                        <input type="hidden" id="ftp_user" name="ftp_user" value="{$ftp.name}" />
+                        <input type="hidden" id="ftp_pwd" name="ftp_pwd" value="{$ftp.password}" />
+                    <button class="btn btn-primary btn-sm" type="button" onclick="FtpLogin()">管理FTP</button>
+                    </form>
+                    
+                </td>
+              </tr>
+        </tbody>
+      </table>
+      <br>
+<form id="database_edit">
+  <div class="form-group">
+    <label>修改FTP密码：</label>
+    <input type="text" class="form-control" name="ftp_password" id="ftp_password" placeholder="请勿设置太弱的密码">
+  </div>
+  <button  type="button" onclick="ResFtpPass('{$ftp.id}')" class="btn btn-info">确定修改</button>
+</form>
+</div>
+<script src="https://www.layuicdn.com/layer/layer.js"></script>
+<script>
+    function ResFtpPass(ftp_id){
+        var ftp_password = $('input[name = ftp_password]').val();
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"ResFtpPass","ftp_id":ftp_id,"ftp_password":ftp_password},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+	
+    function FtpLogin() {
+    var ftp_host = $('input[name = ftp_host]').val();
+    var ftp_port = $('input[name = ftp_port]').val();
+    var ftp_user = $('input[name = ftp_user]').val();
+    var ftp_pwd = $('input[name = ftp_pwd]').val();
+
+    if (!ftp_host) {
+        layer.msg('请输入 FTP 主机地址', { icon: 2 });
+        return;
+    }
+
+    // 构造连接字符串
+    var ftp_url = "ftp://" + ftp_host + (ftp_port && ftp_port != '21' ? ":" + ftp_port : "");
+    
+    // 复制到剪贴板
+    var input = $('<input>');
+    $('body').append(input);
+    input.val(ftp_url).select();
+    document.execCommand('copy');
+    input.remove();
+
+    layer.msg('FTP 地址已复制！\n请打开“我的电脑/访达”或者FTP客户端，在地址栏粘贴并回车。\n用户名：' + ftp_user, {
+        icon: 1,
+        time: 6000,
+        shade: 0.3
+    });
+    
+    // 可选：尝试同时唤起（在 Firefox 中有效）
+    // window.location.href = ftp_url; 
+}
+
+    function ajax(options){
+	    //创建一个ajax对象
+	    var xhr = new XMLHttpRequest() || new ActiveXObject("Microsoft,XMLHTTP");
+	    //数据的处理 {a:1,b:2} a=1&b=2;
+	    if(typeof(options.data)!='string'){
+            var str = "";
+            for(var key in options.data){
+                str+="&"+key+"="+options.data[key];
+            }
+            str = str.slice(1)
+        }else{
+            var str = options.data;
+        }
+	    options.dataType=options.dataType||'json';
+	    if(options.type == "get"){
+	        var url = options.url+"?"+str;
+	        xhr.open("get",url);
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send();
+	    }else if(options.type == "post"){
+	        xhr.open("post",options.url);
+	        xhr.setRequestHeader("content-type","application/x-www-form-urlencoded");
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send(str)
+	    }
+	    //监听
+	    xhr.onreadystatechange = function(){
+	        //当请求成功的时候
+	        if(xhr.readyState == 4 && xhr.status == 200){
+	            var d = xhr.responseText;
+	            d = JSON.parse(d);
+	            //将请求的数据传递给成功回调函数
+	            options.success&&options.success(d,xhr.responseXML)
+	        }else if(xhr.status != 200){
+	            //当失败的时候将服务器的状态传递给失败的回调函数
+	            options.error&&options.error(xhr.status);
+	        }
+	    }
+	}
+	
+  </script>

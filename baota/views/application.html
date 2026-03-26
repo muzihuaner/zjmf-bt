@@ -1,0 +1,95 @@
+<div class="alert alert-warning alert-dismissible" role="alert">
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <strong>提示：</strong> 您可以根据您的需求一键部署我们提供的应用，您当前的PHP版本为：<code>PHP-{$php}</code>
+</div>
+<div class="table-responsive">
+      <table class="table table-bordered table-condensed">
+        <thead>
+          <tr>
+            <th>应用</th>
+            <th>版本</th>
+            <th>作者</th>
+            <th>支持PHP版本</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+            {foreach $list as $key=>$vo } 
+              <tr>
+                <td>{$vo.title}</td>
+                <td>{$vo.version}</td>
+                <td>{$vo.author}</td>
+                <td>{$vo.php}</td>
+                <td>
+                    {if strpos($vo['php'], $php)}
+                    <button class="btn btn-primary btn-sm" type="button" onclick="SetupPackage('{$vo.name}')">一键部署</button>
+                    {else}
+                    <button class="btn btn-danger btn-sm" disabled="">PHP版本不支持</button>
+                    {/if}
+                    </td>
+              </tr>
+            {/foreach}
+        </tbody>
+      </table>
+    </div>
+<script src="https://www.layuicdn.com/layer/layer.js"></script>
+<script>
+    function SetupPackage(dname){
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"SetupPackage","dname":dname},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function ajax(options){
+	    //创建一个ajax对象
+	    var xhr = new XMLHttpRequest() || new ActiveXObject("Microsoft,XMLHTTP");
+	    //数据的处理 {a:1,b:2} a=1&b=2;
+	    if(typeof(options.data)!='string'){
+            var str = "";
+            for(var key in options.data){
+                str+="&"+key+"="+options.data[key];
+            }
+            str = str.slice(1)
+        }else{
+            var str = options.data;
+        }
+	    options.dataType=options.dataType||'json';
+	    if(options.type == "get"){
+	        var url = options.url+"?"+str;
+	        xhr.open("get",url);
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send();
+	    }else if(options.type == "post"){
+	        xhr.open("post",options.url);
+	        xhr.setRequestHeader("content-type","application/x-www-form-urlencoded");
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send(str)
+	    }
+	    //监听
+	    xhr.onreadystatechange = function(){
+	        //当请求成功的时候
+	        if(xhr.readyState == 4 && xhr.status == 200){
+	            var d = xhr.responseText;
+	            d = JSON.parse(d);
+	            //将请求的数据传递给成功回调函数
+	            options.success&&options.success(d,xhr.responseXML)
+	        }else if(xhr.status != 200){
+	            //当失败的时候将服务器的状态传递给失败的回调函数
+	            options.error&&options.error(xhr.status);
+	        }
+	    }
+	}
+	
+  </script>

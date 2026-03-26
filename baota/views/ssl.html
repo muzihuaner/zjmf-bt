@@ -1,0 +1,273 @@
+<form>
+  <div class="form-row">
+    <div class="col">
+        <label>SSL状态</label>
+      <input type="text" class="form-control" value="{if $data.status}开启{else}关闭{/if}" readonly>
+    </div>
+    <div class="col">
+        <label>签发机构</label>
+      <input type="text" class="form-control" value="{$data.cert_data.issuer}" readonly>
+    </div>
+  </div>
+  <br>
+  <div class="form-row">
+   <div class="col">
+        <label>签发时间</label>
+      <input type="text" class="form-control" value="{$data.cert_data.notBefore}" readonly>
+    </div>
+     <div class="col">
+        <label>到期时间 <code>[剩余{$data.cert_data.endtime}天]</code></label>
+      <input type="text" class="form-control" value="{$data.cert_data.notAfter}" readonly>
+    </div>
+  </div>
+  <br>
+   <div class="form-row">
+   <div class="col">
+        <label>签发域名</label>
+      <input type="text" class="form-control" value="{$data.cert_data.subject}" readonly>
+    </div>
+    </div>
+    <br>
+    <div class="form-row">
+        <div class="col">
+            <label>证书(PEM格式)</label>
+            <textarea class="form-control" name="cert_csr" rows="10">{$data.csr}</textarea>
+        </div>
+        <div class="col">
+            <label>密钥(KEY)</label>
+            <textarea class="form-control" name="cert_key" rows="10">{$data.key}</textarea>
+        </div>
+    </div>
+    <br>
+    <button  type="button" onclick="saveSSL()" class="btn btn-info">保存/开启</button> 
+    <button  type="button" onclick="closeSSL()" class="btn btn-danger">关闭</button>
+ <br> <br>
+
+<div class="form-group">
+    <label>强制HTTPS状态</label>
+    <input class="form-control" value="{if $data.httpTohttps}开启{else}关闭{/if}" readonly>
+</div>
+<button  type="button" onclick="toHttps()" class="btn btn-info">开启</button> <button  type="button" onclick="closeHttps()" class="btn btn-danger">关闭</button> 
+<script src="https://www.layuicdn.com/layer/layer.js"></script>
+  <script>
+    function Base64() {  
+
+    // private property  
+    _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";  
+
+    // public method for encoding  
+    this.encode = function (input) {  
+        var output = "";  
+        var chr1, chr2, chr3, enc1, enc2, enc3, enc4;  
+        var i = 0;  
+        input = _utf8_encode(input);  
+        while (i < input.length) {  
+            chr1 = input.charCodeAt(i++);  
+            chr2 = input.charCodeAt(i++);  
+            chr3 = input.charCodeAt(i++);  
+            enc1 = chr1 >> 2;  
+            enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);  
+            enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);  
+            enc4 = chr3 & 63;  
+            if (isNaN(chr2)) {  
+                enc3 = enc4 = 64;  
+            } else if (isNaN(chr3)) {  
+                enc4 = 64;  
+            }  
+            output = output +  
+            _keyStr.charAt(enc1) + _keyStr.charAt(enc2) +  
+            _keyStr.charAt(enc3) + _keyStr.charAt(enc4);  
+        }  
+        return output;  
+    }  
+
+    // public method for decoding  
+    this.decode = function (input) {  
+        var output = "";  
+        var chr1, chr2, chr3;  
+        var enc1, enc2, enc3, enc4;  
+        var i = 0;  
+        input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");  
+        while (i < input.length) {  
+            enc1 = _keyStr.indexOf(input.charAt(i++));  
+            enc2 = _keyStr.indexOf(input.charAt(i++));  
+            enc3 = _keyStr.indexOf(input.charAt(i++));  
+            enc4 = _keyStr.indexOf(input.charAt(i++));  
+            chr1 = (enc1 << 2) | (enc2 >> 4);  
+            chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);  
+            chr3 = ((enc3 & 3) << 6) | enc4;  
+            output = output + String.fromCharCode(chr1);  
+            if (enc3 != 64) {  
+                output = output + String.fromCharCode(chr2);  
+            }  
+            if (enc4 != 64) {  
+                output = output + String.fromCharCode(chr3);  
+            }  
+        }  
+        output = _utf8_decode(output);  
+        return output;  
+    }  
+
+    // private method for UTF-8 encoding  
+    _utf8_encode = function (string) {  
+        string = string.replace(/\r\n/g,"\n");  
+        var utftext = "";  
+        for (var n = 0; n < string.length; n++) {  
+            var c = string.charCodeAt(n);  
+            if (c < 128) {  
+                utftext += String.fromCharCode(c);  
+            } else if((c > 127) && (c < 2048)) {  
+                utftext += String.fromCharCode((c >> 6) | 192);  
+                utftext += String.fromCharCode((c & 63) | 128);  
+            } else {  
+                utftext += String.fromCharCode((c >> 12) | 224);  
+                utftext += String.fromCharCode(((c >> 6) & 63) | 128);  
+                utftext += String.fromCharCode((c & 63) | 128);  
+            }  
+
+        }  
+        return utftext;  
+    }  
+
+    // private method for UTF-8 decoding  
+    _utf8_decode = function (utftext) {  
+        var string = "";  
+        var i = 0;  
+        var c = c1 = c2 = 0;  
+        while ( i < utftext.length ) {  
+            c = utftext.charCodeAt(i);  
+            if (c < 128) {  
+                string += String.fromCharCode(c);  
+                i++;  
+            } else if((c > 191) && (c < 224)) {  
+                c2 = utftext.charCodeAt(i+1);  
+                string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));  
+                i += 2;  
+            } else {  
+                c2 = utftext.charCodeAt(i+1);  
+                c3 = utftext.charCodeAt(i+2);  
+                string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));  
+                i += 3;  
+            }  
+        }  
+        return string;  
+    }  
+}
+    function saveSSL(){
+        var base64 = new Base64();
+        var cert_csr = base64.encode($('textarea[name = cert_csr]').val().split("\n").join(";"));
+        var cert_key = base64.encode($('textarea[name = cert_key]').val().split("\n").join(";"));
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"SetSSL","cert_csr":cert_csr,"cert_key":cert_key},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function closeSSL(){
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"CloseSSLConf"},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    
+    function toHttps(){
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"HttpToHttps"},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    
+    function closeHttps(){
+        var load = layer.load();
+        ajax({
+		    type:"post",
+		    url:"{$MODULE_CUSTOM_API}",
+		    data:{"func":"CloseToHttps"},
+		    success:function(data){
+		        layer.close(load);
+		    	if(data.code==200){
+		    	    layer.msg(data.msg,{icon:1,time:800},function(){
+		    	        window.location.reload();
+		    	    });
+		    	}else{
+		    		layer.msg(data.msg,{icon:2});
+		    	}
+		    }
+		})
+    }
+    function ajax(options){
+	    //创建一个ajax对象
+	    var xhr = new XMLHttpRequest() || new ActiveXObject("Microsoft,XMLHTTP");
+	    //数据的处理 {a:1,b:2} a=1&b=2;
+	    if(typeof(options.data)!='string'){
+            var str = "";
+            for(var key in options.data){
+                str+="&"+key+"="+options.data[key];
+            }
+            str = str.slice(1)
+        }else{
+            var str = options.data;
+        }
+	    options.dataType=options.dataType||'json';
+	    if(options.type == "get"){
+	        var url = options.url+"?"+str;
+	        xhr.open("get",url);
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send();
+	    }else if(options.type == "post"){
+	        xhr.open("post",options.url);
+	        xhr.setRequestHeader("content-type","application/x-www-form-urlencoded");
+	        xhr.setRequestHeader("Authorization","JWT {$Think.get.jwt}");
+	        xhr.send(str)
+	    }
+	    //监听
+	    xhr.onreadystatechange = function(){
+	        //当请求成功的时候
+	        if(xhr.readyState == 4 && xhr.status == 200){
+	            var d = xhr.responseText;
+	            d = JSON.parse(d);
+	            //将请求的数据传递给成功回调函数
+	            options.success&&options.success(d,xhr.responseXML)
+	        }else if(xhr.status != 200){
+	            //当失败的时候将服务器的状态传递给失败的回调函数
+	            options.error&&options.error(xhr.status);
+	        }
+	    }
+	}
+	
+  </script>
